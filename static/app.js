@@ -101,6 +101,10 @@ const readinessInfo = document.querySelector("#readinessInfo");
 const openScreenRecordingBtn = document.querySelector("#openScreenRecordingBtn");
 const openAccessibilityBtn = document.querySelector("#openAccessibilityBtn");
 const startSafariDriverBtn = document.querySelector("#startSafariDriverBtn");
+const asrFileInput = document.querySelector("#asrFileInput");
+const pickAsrFileBtn = document.querySelector("#pickAsrFileBtn");
+const transcribeAsrBtn = document.querySelector("#transcribeAsrBtn");
+const asrResult = document.querySelector("#asrResult");
 const refreshDiagnosticsBtn = document.querySelector("#refreshDiagnosticsBtn");
 const diagnosticsInfo = document.querySelector("#diagnosticsInfo");
 const requestAutomationBtn = document.querySelector("#requestAutomationBtn");
@@ -214,6 +218,7 @@ let reminderTimer = null;
 let approvalFilter = "all";
 let notifiedReminders = new Set(JSON.parse(localStorage.getItem("monday_notified_reminders") || "[]"));
 let notifiedApprovals = new Set(JSON.parse(localStorage.getItem("monday_notified_approvals") || "[]"));
+let selectedAsrData = "";
 
 function showToast(message) {
   toast.textContent = message;
@@ -1224,18 +1229,62 @@ async function loadReadiness() {
     const accessibility = data.accessibility || {};
     const safari = data.safaridriver || {};
     const wechat = data.wechat || {};
+    const asr = data.asr || {};
     const rows = [
       ["屏幕录制", screen.ready ? "已授权" : `需要授权：${screen.process || "Python"}`],
       ["辅助功能", accessibility.ready ? "已授权" : `需要授权：${accessibility.process || "Python"}`],
       ["SafariDriver", safari.running ? "运行中" : safari.installed ? "已安装未运行" : "未安装"],
       ["微信", wechat.running ? "运行中" : wechat.installed ? "已安装未运行" : "未安装"],
       ["微信登录状态", wechat.logged_in === "unknown" ? "无法自动检测" : wechat.logged_in ? "已登录" : "未登录"],
+      ["本地语音转写", asr.available ? "可用" : "未安装"],
     ]
       .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`)
       .join("");
     readinessInfo.innerHTML = rows;
+    transcribeAsrBtn.disabled = !asr.available || !selectedAsrData;
+    asrResult.textContent = asr.available
+      ? "本地语音转写可用，请选择音频文件。"
+      : "本地语音转写：安装 faster-whisper 后可用。";
   } catch (error) {
     readinessInfo.innerHTML = "<dt>状态</dt><dd>检测失败</dd>";
+  }
+}
+
+async function pickAsrFile() {
+  const file = asrFileInput.files?.[0];
+  if (!file) {
+    showToast("请选择音频文件。");
+    return;
+  }
+  try {
+    selectedAsrData = await fileToBase64(file);
+    transcribeAsrBtn.disabled = false;
+    asrResult.textContent = `已选择：${file.name}，可以开始本地转写。`;
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function transcribeAsrFile() {
+  if (!selectedAsrData) {
+    showToast("请先选择音频文件。");
+    return;
+  }
+  transcribeAsrBtn.disabled = true;
+  asrResult.textContent = "正在本地识别语音...";
+  try {
+    const data = await fetchJson("/api/transcribe", {
+      method: "POST",
+      body: JSON.stringify({ audio_data: selectedAsrData, language: "zh" }),
+    });
+    if (data.error) throw new Error(data.error);
+    asrResult.textContent = data.text || "未识别到语音。";
+    showToast("本地语音转写完成。");
+  } catch (error) {
+    asrResult.textContent = `转写失败：${error.message}`;
+    showToast(error.message);
+  } finally {
+    transcribeAsrBtn.disabled = false;
   }
 }
 
@@ -3379,6 +3428,9 @@ startSafariDriverBtn.addEventListener("click", async () => {
     startSafariDriverBtn.disabled = false;
   }
 });
+pickAsrFileBtn.addEventListener("click", () => asrFileInput.click());
+asrFileInput.addEventListener("change", pickAsrFile);
+transcribeAsrBtn.addEventListener("click", transcribeAsrFile);
 refreshDiagnosticsBtn.addEventListener("click", async () => {
   refreshDiagnosticsBtn.disabled = true;
   try {

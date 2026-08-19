@@ -69,6 +69,7 @@ def main() -> int:
             "network",
             "files/permission",
             "readiness",
+            "transcribe",
             "search?q=星期",
             "semantic-search?q=星期",
             "patterns",

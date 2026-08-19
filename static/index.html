@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <title>星期一 · Monday Local Assistant</title>
-    <link rel="stylesheet" href="/static/styles.css?v=57" />
+    <link rel="stylesheet" href="/static/styles.css?v=58" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="/static/vendor/face-api.min.js?v=1"></script>
-    <script defer src="/static/app.js?v=57"></script>
+    <script defer src="/static/app.js?v=58"></script>
   </head>
   <body>
     <div id="authOverlay" class="auth-overlay">
@@ -337,6 +337,12 @@
               <button id="openAccessibilityBtn" type="button">辅助功能设置</button>
               <button id="startSafariDriverBtn" type="button">启用 SafariDriver</button>
             </div>
+            <div class="asr-row">
+              <input id="asrFileInput" type="file" accept="audio/*" hidden />
+              <button id="pickAsrFileBtn" type="button">选择音频</button>
+              <button id="transcribeAsrBtn" type="button" disabled>本地转写</button>
+            </div>
+            <div id="asrResult" class="asr-result">本地语音转写：安装 faster-whisper 后可用。</div>
           </section>
 
           <section class="panel">

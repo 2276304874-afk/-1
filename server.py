@@ -70,6 +70,7 @@ BROWSER_COOKIE_PATH = DATA_DIR / "browser_cookies.json"
 IMPORT_DIR = DATA_DIR / "imports"
 TTS_DIR = DATA_DIR / "tts"
 OCR_RUNTIME_DIR = DATA_DIR / "ocr_runtime"
+TRANSCRIPTION_DIR = DATA_DIR / "transcriptions"
 SECRETS_PATH = DATA_DIR / "secrets.json"
 WORKSPACE_ROOT = Path(os.environ.get("MONDAY_WORKSPACE", str(BASE_DIR))).resolve()
 
@@ -86,6 +87,7 @@ MAX_TOOL_ROUNDS = 5
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_IMPORT_BYTES = 30 * 1024 * 1024
 MAX_IMPORT_FILES_PER_BATCH = 200
+MAX_STATE_BYTES = 8 * 1024 * 1024
 MAX_PARALLEL_COMMANDS = 6
 MAX_WORKSPACE_FILE_BYTES = 2 * 1024 * 1024
 MAX_CODE_BYTES = 200 * 1024
@@ -1428,6 +1430,32 @@ def ollama_models() -> Dict[str, List[str]]:
         return MODELS_CACHE["data"]
 
 
+def resolve_available_model(preferred: Optional[str] = None) -> str:
+    models = ollama_models()
+    if not models:
+        return preferred or DEFAULT_MODEL
+    candidates = [preferred, DEFAULT_MODEL] if preferred else [DEFAULT_MODEL]
+    for candidate in candidates:
+        if candidate in models:
+            return candidate
+    preferred_order = [
+        "qwen2.5:7b",
+        "qwen2.5-coder:7b",
+        "qwen2.5-coder:14b",
+        "llama3:latest",
+        "gemma4:e4b",
+        "glm-5.2:cloud",
+        "minimax-m3:cloud",
+    ]
+    for candidate in preferred_order:
+        if candidate in models:
+            return candidate
+    for name, capabilities in models.items():
+        if "tools" in capabilities:
+            return name
+    return next(iter(models))
+
+
 def model_supports_tools(model_name: str) -> bool:
     models = ollama_models()
     capabilities = models.get(model_name)
@@ -1457,6 +1485,8 @@ def context_window_for_model(model_name: str) -> int:
     # ollama_models returns capabilities list, so use name heuristics
     if "gemma" in model_name.lower():
         return 16384
+    if "qwen" in model_name.lower() or "llava" in model_name.lower():
+        return 32768
     if "minimax" in model_name.lower() or "glm" in model_name.lower():
         return 16384
     return 8192
@@ -1468,6 +1498,12 @@ def select_model_for_task(state: Dict[str, Any], required_capability: str) -> st
     capabilities = models.get(current) or []
     if not models:
         return current
+    if current not in models:
+        resolved = resolve_available_model(current)
+        state["settings"]["model"] = resolved
+        save_state(state)
+        current = resolved
+        capabilities = models.get(current) or []
     if required_capability in capabilities:
         return current
     for name, item_capabilities in models.items():
@@ -2277,6 +2313,10 @@ def readiness_status() -> Dict[str, Any]:
             "hint": "先运行 safaridriver --enable，再启动 safaridriver -p 0；首次需在 Safari 中允许自动化。",
         },
         "wechat": wechat_status(),
+        "asr": {
+            "available": transcription_available(),
+            "hint": "运行 pip install faster-whisper 后可启用完全本地语音转写。",
+        },
         "screen_recording_setting": "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
         "accessibility_setting": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
     }
@@ -2366,6 +2406,10 @@ def send_wechat_message_action(contact: str, message: str) -> Dict[str, Any]:
             'end tell'
         )
         subprocess.run(["osascript", "-e", send_script], check=True, timeout=15)
+        try:
+            subprocess.run(["pbcopy"], input="", text=True, timeout=5)
+        except Exception:
+            pass
         return {"executed": True, "contact": contact, "message_length": len(message)}
     except subprocess.TimeoutExpired:
         return {"error": "微信发送超时，请确认微信已登录并允许辅助功能。"}
@@ -3028,6 +3072,78 @@ def ocr_image_data(image_data: str) -> Dict[str, Any]:
     path.write_bytes(content)
     try:
         return ocr_image_path(path)
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def transcription_available() -> bool:
+    try:
+        import faster_whisper  # type: ignore
+
+        return True
+    except Exception:
+        pass
+    try:
+        import whisper  # type: ignore
+
+        return True
+    except Exception:
+        return False
+
+
+def transcribe_audio(audio_data: str, language: str = "zh") -> Dict[str, Any]:
+    if not transcription_available():
+        return {
+            "error": "本地语音识别未安装。请运行 pip install faster-whisper，或安装 openai-whisper。",
+            "install": "pip install faster-whisper",
+        }
+    raw = (audio_data or "").strip()
+    if not raw:
+        return {"error": "音频数据为空"}
+    if raw.startswith("data:"):
+        header, _, encoded = raw.partition(",")
+        if "base64" not in header:
+            return {"error": "音频数据格式无效"}
+        raw = encoded
+    try:
+        content = base64.b64decode(raw, validate=True)
+    except Exception as exc:
+        return {"error": f"音频 Base64 解码失败：{exc}"}
+    if not content:
+        return {"error": "音频内容为空"}
+    TRANSCRIPTION_DIR.mkdir(parents=True, exist_ok=True)
+    path = TRANSCRIPTION_DIR / f"transcribe-{secrets.token_hex(4)}.wav"
+    try:
+        path.write_bytes(content)
+        try:
+            import faster_whisper  # type: ignore
+
+            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "small")
+            model = faster_whisper.WhisperModel(model_name, device="cpu", compute_type="int8")
+            segments, info = model.transcribe(str(path), language=(language or "zh")[:10], vad_filter=True)
+            text = "".join(segment.text for segment in segments).strip()
+            return {
+                "ok": True,
+                "text": text,
+                "language": getattr(info, "language", "zh"),
+                "engine": "faster-whisper",
+                "model": model_name,
+            }
+        except ImportError:
+            import whisper  # type: ignore
+
+            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "small")
+            model = whisper.load_model(model_name)
+            result = model.transcribe(str(path), language=(language or "zh")[:10])
+            return {
+                "ok": True,
+                "text": str(result.get("text") or "").strip(),
+                "language": result.get("language", "zh"),
+                "engine": "openai-whisper",
+                "model": model_name,
+            }
+    except Exception as exc:
+        return {"error": f"语音识别失败：{exc}"}
     finally:
         path.unlink(missing_ok=True)
 
@@ -4145,6 +4261,27 @@ def run_safe_command(command: str, cwd: Optional[Path] = None) -> Dict[str, Any]
         return {"error": "命令为空"}
 
     executable = parts[0]
+    if executable in {"cat", "head", "tail", "grep", "find", "du", "ls", "mdfind"}:
+        sensitive_terms = (
+            "/etc/",
+            "/private/",
+            "/usr/bin/",
+            "/usr/sbin/",
+            "/usr/lib/",
+            "~/.ssh",
+            ".ssh/",
+            "data/auth.json",
+            "data/secrets.json",
+            "data/memory.json",
+            "server.lock",
+        )
+        for argument in parts[1:]:
+            lowered = argument.lower()
+            if any(term in lowered for term in sensitive_terms):
+                return {
+                    "error": "该命令可能读取敏感文件，已被拒绝。",
+                    "command": command,
+                }
     if executable not in SAFE_COMMANDS:
         return {
             "error": f"为安全起见，星期一暂不直接运行命令：{executable}",
@@ -7178,6 +7315,25 @@ def scheduler_loop() -> None:
             pass
 
 
+def archive_large_state(state: Dict[str, Any]) -> bool:
+    if not STATE_PATH.exists() or STATE_PATH.stat().st_size <= MAX_STATE_BYTES:
+        return False
+    conversation = state.get("conversation", [])
+    if len(conversation) <= 200:
+        return False
+    older = conversation[:-200]
+    state.setdefault("conversation_summaries", []).append(
+        {
+            "summary": f"状态文件过大，自动归档了 {len(older)} 条旧对话。",
+            "message_count": len(older),
+            "created_at": datetime.now().astimezone().isoformat(),
+        }
+    )
+    state["conversation_summaries"] = state["conversation_summaries"][-20:]
+    state["conversation"] = conversation[-200:]
+    return True
+
+
 def memory_maintenance_loop() -> None:
     """低频记忆维护：去重、冲突和过期归档，不在每次读状态时执行。"""
     while True:
@@ -7185,7 +7341,8 @@ def memory_maintenance_loop() -> None:
         try:
             with MEMORY_MAINTENANCE_LOCK:
                 state = load_state()
-                changed = reconcile_state_memory(state)
+                changed = archive_large_state(state)
+                changed = reconcile_state_memory(state) or changed
                 changed = archive_stale_memories(state) or changed
                 if changed:
                     save_state(state)
@@ -7642,7 +7799,11 @@ class MondayRequestHandler(BaseHTTPRequestHandler):
             self.send_json(ocr_screen())
             return
 
-        if path in {"/api/transcribe", "/api/whisper"}:
+        if path == "/api/transcribe":
+            self.send_json({"available": transcription_available()})
+            return
+
+        if path == "/api/whisper":
             self.send_json({"error": "该能力尚未实现，当前版本不提供此接口"}, status=501)
             return
 
@@ -7941,6 +8102,12 @@ class MondayRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/ocr":
             body = read_json_body(self)
             result = ocr_image_data(str(body.get("image_data") or ""))
+            self.send_json(result, status=400 if "error" in result else 200)
+            return
+
+        if path == "/api/transcribe":
+            body = read_json_body(self)
+            result = transcribe_audio(str(body.get("audio_data") or ""), str(body.get("language") or "zh"))
             self.send_json(result, status=400 if "error" in result else 200)
             return
 
@@ -8350,7 +8517,14 @@ def main() -> None:
         print("检测到另一个星期一实例正在运行，已拒绝启动，避免并发写坏数据。")
         sys.exit(1)
     backup_state_on_startup()
-    load_state()
+    state = load_state()
+    current_model = state["settings"].get("model", DEFAULT_MODEL)
+    if ollama_models() and current_model not in ollama_models():
+        resolved_model = resolve_available_model(current_model)
+        if resolved_model != current_model:
+            state["settings"]["model"] = resolved_model
+            save_state(state)
+            print(f"默认模型不可用，已自动切换为：{resolved_model}")
     if not SCHEDULER_STARTED:
         SCHEDULER_STARTED = True
         threading.Thread(target=scheduler_loop, name="monday-scheduler", daemon=True).start()
