@@ -6470,6 +6470,16 @@ def call_ollama(messages: List[Dict[str, Any]], tools_enabled: bool, model_name:
         response = httpx.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
         response.raise_for_status()
         return response.json().get("message") or {}
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in {429, 500, 502, 503}:
+            fallback_model = resolve_available_model()
+            if fallback_model != model_name:
+                payload["model"] = fallback_model
+                fallback_response = httpx.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=120)
+                fallback_response.raise_for_status()
+                print(f"[model] {model_name} 不可用，已回退到 {fallback_model}", file=sys.stderr)
+                return fallback_response.json().get("message") or {}
+        raise RuntimeError(f"Ollama 请求失败：{exc}") from exc
     except Exception as exc:
         raise RuntimeError(f"Ollama 请求失败：{exc}") from exc
 
