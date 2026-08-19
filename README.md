@@ -75,6 +75,8 @@ Codex 模式说明：
 - 审批、审计、定时任务、记忆搜索、Skill 等长内容支持折叠展开，审计和审批按日期收纳。
 - 启动时自动检测 Ollama 模型：默认模型不可用时会自动选择已安装且支持 tools 的模型。
 - 新增可选本地 ASR：安装 `faster-whisper` 后 `/api/transcribe` 可提供完全本地语音转写。
+- 准备 whisper 模型：`bash scripts/download_whisper_model.sh small`，也可用 `MONDAY_WHISPER_MODEL` 指定本地模型路径。
+- 界面支持直接录制麦克风音频并本地转写；默认使用已下载的 `tiny` 模型。
 - 敏感路径读取和危险命令已加固，并提供 `evals/security_smoke.py` 安全冒烟测试。
 - 代码沙箱已禁止读取 `/etc/passwd`、`~/.ssh`、认证/密钥/记忆文件，禁止外网和写工作区外，提供 `evals/sandbox_smoke.py` 逃逸测试。
 - 支持手动添加外部 HTTP API 集成，并通过 `call_integration` 调用。
@@ -217,7 +219,7 @@ data/memory.json
 - 新增无模型 API 回归脚本 `evals/api_smoke.py`，一条命令覆盖核心读接口和可清理写接口。
 - 修复审批/审计/任务列表满容量时新记录被旧记录挤掉的问题，并让集成模板自动携带 `secret:` 请求头。
 - 补充接口：`/api/events`、`/api/clipboard`、`/api/situation`、`/api/intent`、`/api/routine`、`/api/persona`、`/api/report`。
-- 屏幕 OCR 与本地 TTS 已实现；语音转写暂未启用，接口返回明确的 501。
+- 屏幕 OCR 与本地 TTS 已实现；语音转写已接入 faster-whisper，模型就绪后可用。
 - 新增“环境就绪”检测：屏幕录制、辅助功能、SafariDriver、微信状态均可一键检测并打开对应系统设置。
 - 前端已接入 `/api/chat/stream`，回复以打字机效果显示。
 - 混合检索升级为 RRF 融合，并加入 jieba 中文分词。

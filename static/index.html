@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <title>星期一 · Monday Local Assistant</title>
-    <link rel="stylesheet" href="/static/styles.css?v=58" />
+    <link rel="stylesheet" href="/static/styles.css?v=59" />
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="/static/vendor/face-api.min.js?v=1"></script>
-    <script defer src="/static/app.js?v=58"></script>
+    <script defer src="/static/app.js?v=59"></script>
   </head>
   <body>
     <div id="authOverlay" class="auth-overlay">
@@ -341,6 +341,7 @@
               <input id="asrFileInput" type="file" accept="audio/*" hidden />
               <button id="pickAsrFileBtn" type="button">选择音频</button>
               <button id="transcribeAsrBtn" type="button" disabled>本地转写</button>
+              <button id="recordAsrBtn" type="button" disabled>录制语音</button>
             </div>
             <div id="asrResult" class="asr-result">本地语音转写：安装 faster-whisper 后可用。</div>
           </section>

@@ -104,6 +104,7 @@ const startSafariDriverBtn = document.querySelector("#startSafariDriverBtn");
 const asrFileInput = document.querySelector("#asrFileInput");
 const pickAsrFileBtn = document.querySelector("#pickAsrFileBtn");
 const transcribeAsrBtn = document.querySelector("#transcribeAsrBtn");
+const recordAsrBtn = document.querySelector("#recordAsrBtn");
 const asrResult = document.querySelector("#asrResult");
 const refreshDiagnosticsBtn = document.querySelector("#refreshDiagnosticsBtn");
 const diagnosticsInfo = document.querySelector("#diagnosticsInfo");
@@ -219,6 +220,10 @@ let approvalFilter = "all";
 let notifiedReminders = new Set(JSON.parse(localStorage.getItem("monday_notified_reminders") || "[]"));
 let notifiedApprovals = new Set(JSON.parse(localStorage.getItem("monday_notified_approvals") || "[]"));
 let selectedAsrData = "";
+let asrMediaRecorder = null;
+let asrRecording = false;
+let asrStream = null;
+let asrChunks = [];
 
 function showToast(message) {
   toast.textContent = message;
@@ -1242,6 +1247,7 @@ async function loadReadiness() {
       .join("");
     readinessInfo.innerHTML = rows;
     transcribeAsrBtn.disabled = !asr.available || !selectedAsrData;
+    recordAsrBtn.disabled = !asr.available;
     asrResult.textContent = asr.available
       ? "本地语音转写可用，请选择音频文件。"
       : "本地语音转写：安装 faster-whisper 后可用。";
@@ -1285,6 +1291,66 @@ async function transcribeAsrFile() {
     showToast(error.message);
   } finally {
     transcribeAsrBtn.disabled = false;
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || "");
+      const comma = value.indexOf(",");
+      resolve(comma >= 0 ? value.slice(comma + 1) : value);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function toggleAsrRecording() {
+  if (asrRecording) {
+    if (asrMediaRecorder && asrMediaRecorder.state !== "inactive") {
+      asrMediaRecorder.stop();
+    }
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showToast("当前浏览器不支持录音。");
+    return;
+  }
+  try {
+    asrStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    asrChunks = [];
+    asrMediaRecorder = new MediaRecorder(asrStream);
+    asrMediaRecorder.ondataavailable = (event) => {
+      if (event.data.size) asrChunks.push(event.data);
+    };
+    asrMediaRecorder.onstop = async () => {
+      asrRecording = false;
+      recordAsrBtn.textContent = "录制语音";
+      if (asrStream) {
+        asrStream.getTracks().forEach((track) => track.stop());
+        asrStream = null;
+      }
+      const blob = new Blob(asrChunks, { type: asrMediaRecorder?.mimeType || "audio/webm" });
+      if (!blob.size) {
+        showToast("没有录到声音。");
+        return;
+      }
+      try {
+        selectedAsrData = await blobToBase64(blob);
+        transcribeAsrBtn.disabled = false;
+        await transcribeAsrFile();
+      } catch (error) {
+        showToast(error.message);
+      }
+    };
+    asrRecording = true;
+    recordAsrBtn.textContent = "停止录音";
+    asrResult.textContent = "正在录音，再次点击“停止录音”后开始本地转写。";
+    asrMediaRecorder.start();
+  } catch (error) {
+    showToast(`录音启动失败：${error.message}`);
   }
 }
 
@@ -3431,6 +3497,7 @@ startSafariDriverBtn.addEventListener("click", async () => {
 pickAsrFileBtn.addEventListener("click", () => asrFileInput.click());
 asrFileInput.addEventListener("change", pickAsrFile);
 transcribeAsrBtn.addEventListener("click", transcribeAsrFile);
+recordAsrBtn.addEventListener("click", toggleAsrRecording);
 refreshDiagnosticsBtn.addEventListener("click", async () => {
   refreshDiagnosticsBtn.disabled = true;
   try {

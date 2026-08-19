@@ -2315,7 +2315,7 @@ def readiness_status() -> Dict[str, Any]:
         "wechat": wechat_status(),
         "asr": {
             "available": transcription_available(),
-            "hint": "运行 pip install faster-whisper 后可启用完全本地语音转写。",
+            "hint": "安装 faster-whisper 并准备 whisper 本地模型后可启用完全本地语音转写。",
         },
         "screen_recording_setting": "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
         "accessibility_setting": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
@@ -3080,7 +3080,7 @@ def transcription_available() -> bool:
     try:
         import faster_whisper  # type: ignore
 
-        return True
+        return whisper_model_ready()
     except Exception:
         pass
     try:
@@ -3091,11 +3091,26 @@ def transcription_available() -> bool:
         return False
 
 
+def whisper_model_ready() -> bool:
+    model_name = os.environ.get("MONDAY_WHISPER_MODEL", "tiny").strip()
+    if not model_name:
+        return False
+    model_path = Path(model_name).expanduser()
+    if model_path.exists():
+        return True
+    cache_root = Path.home() / ".cache" / "huggingface" / "hub"
+    if cache_root.exists():
+        for item in cache_root.iterdir():
+            if model_name.replace("/", "--") in item.name or model_name in item.name:
+                return True
+    return False
+
+
 def transcribe_audio(audio_data: str, language: str = "zh") -> Dict[str, Any]:
     if not transcription_available():
         return {
-            "error": "本地语音识别未安装。请运行 pip install faster-whisper，或安装 openai-whisper。",
-            "install": "pip install faster-whisper",
+            "error": "本地语音识别模型未就绪。请先下载 whisper 模型，或设置 MONDAY_WHISPER_MODEL 为本地模型路径。",
+            "install": "export MONDAY_WHISPER_MODEL=/path/to/model",
         }
     raw = (audio_data or "").strip()
     if not raw:
@@ -3118,7 +3133,7 @@ def transcribe_audio(audio_data: str, language: str = "zh") -> Dict[str, Any]:
         try:
             import faster_whisper  # type: ignore
 
-            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "small")
+            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "tiny")
             model = faster_whisper.WhisperModel(model_name, device="cpu", compute_type="int8")
             segments, info = model.transcribe(str(path), language=(language or "zh")[:10], vad_filter=True)
             text = "".join(segment.text for segment in segments).strip()
@@ -3132,7 +3147,7 @@ def transcribe_audio(audio_data: str, language: str = "zh") -> Dict[str, Any]:
         except ImportError:
             import whisper  # type: ignore
 
-            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "small")
+            model_name = os.environ.get("MONDAY_WHISPER_MODEL", "tiny")
             model = whisper.load_model(model_name)
             result = model.transcribe(str(path), language=(language or "zh")[:10])
             return {
