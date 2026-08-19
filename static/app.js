@@ -1235,6 +1235,7 @@ async function loadReadiness() {
     const safari = data.safaridriver || {};
     const wechat = data.wechat || {};
     const asr = data.asr || {};
+    const recommended = data.recommended_models || [];
     const rows = [
       ["屏幕录制", screen.ready ? "已授权" : `需要授权：${screen.process || "Python"}`],
       ["辅助功能", accessibility.ready ? "已授权" : `需要授权：${accessibility.process || "Python"}`],
@@ -1242,6 +1243,7 @@ async function loadReadiness() {
       ["微信", wechat.running ? "运行中" : wechat.installed ? "已安装未运行" : "未安装"],
       ["微信登录状态", wechat.logged_in === "unknown" ? "无法自动检测" : wechat.logged_in ? "已登录" : "未登录"],
       ["本地语音转写", asr.available ? "可用" : "未安装"],
+      ["推荐模型", recommended.length ? recommended.map((item) => item.model).join("、") : "已满足"],
     ]
       .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`)
       .join("");
@@ -1251,6 +1253,9 @@ async function loadReadiness() {
     asrResult.textContent = asr.available
       ? "本地语音转写可用，请选择音频文件。"
       : "本地语音转写：安装 faster-whisper 后可用。";
+    if (recommended.length) {
+      readinessInfo.innerHTML += `<dt>拉取命令</dt><dd><code>${escapeHtml(recommended[0].command)}</code></dd>`;
+    }
   } catch (error) {
     readinessInfo.innerHTML = "<dt>状态</dt><dd>检测失败</dd>";
   }

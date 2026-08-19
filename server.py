@@ -2296,7 +2296,19 @@ def readiness_status() -> Dict[str, Any]:
     except Exception:
         safari_process = False
     accessibility = gui_status().get("accessibility_ready", False)
+    models = ollama_models()
+    recommended_models = []
+    for model, reason in [
+        ("qwen2.5:7b", "通用对话与工具调用"),
+        ("qwen2.5-coder:7b", "代码任务"),
+        ("llava:7b", "视觉图片理解"),
+    ]:
+        if model not in models:
+            recommended_models.append({"model": model, "reason": reason, "command": f"ollama pull {model}"})
     return {
+        "ollama_installed": bool(shutil.which("ollama")),
+        "ollama_models": sorted(models),
+        "recommended_models": recommended_models,
         "screen_recording": {
             "ready": screen_recording_ready(),
             "process": sys.executable,
