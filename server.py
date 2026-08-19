@@ -4404,6 +4404,8 @@ def run_project_command(command: str, state: Dict[str, Any]) -> Dict[str, Any]:
     if state.get("settings", {}).get("agent_mode") != "codex":
         return {"error": "Codex 模式未开启，已拒绝运行项目命令。"}
     root = active_workspace_root(state)
+    if not root.exists() or not root.is_dir():
+        root = WORKSPACE_ROOT
     try:
         parts = shlex.split(command)
     except ValueError as exc:
@@ -4482,6 +4484,8 @@ def run_code(language: str, code: str, state: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": "代码超过 200 KB，未运行"}
 
     root = active_workspace_root(state)
+    if not root.exists() or not root.is_dir():
+        root = WORKSPACE_ROOT
     CODE_RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
     file_id = secrets.token_hex(6)
     code_path = CODE_RUNTIME_DIR / f"{file_id}{extension}"
@@ -4492,6 +4496,10 @@ def run_code(language: str, code: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "(allow default)"
             "(deny network*)"
             "(deny file-write*)"
+            '(deny file-read* (literal "/etc/passwd") (literal "/etc/hosts") (literal "/private/etc/passwd") (literal "/private/etc/hosts"))'
+            f'(deny file-read* (subpath "{Path.home() / ".ssh"}"))'
+            f'(deny file-read* (literal "{DATA_DIR / "auth.json"}") (literal "{SECRETS_PATH}") (literal "{STATE_PATH}") (literal "{SERVER_LOCK_PATH}"))'
+            f'(deny file-read* (subpath "{LOG_DIR}") (subpath "{BACKUP_STATE_DIR}") (subpath "{BACKUP_DIR}"))'
             f'(allow file-write* (subpath "{CODE_RUNTIME_DIR}") (subpath "{root}"))'
         )
         result = subprocess.run(

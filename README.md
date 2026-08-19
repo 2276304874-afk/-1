@@ -76,6 +76,7 @@ Codex 模式说明：
 - 启动时自动检测 Ollama 模型：默认模型不可用时会自动选择已安装且支持 tools 的模型。
 - 新增可选本地 ASR：安装 `faster-whisper` 后 `/api/transcribe` 可提供完全本地语音转写。
 - 敏感路径读取和危险命令已加固，并提供 `evals/security_smoke.py` 安全冒烟测试。
+- 代码沙箱已禁止读取 `/etc/passwd`、`~/.ssh`、认证/密钥/记忆文件，禁止外网和写工作区外，提供 `evals/sandbox_smoke.py` 逃逸测试。
 - 支持手动添加外部 HTTP API 集成，并通过 `call_integration` 调用。
 
 ## 首次访问
