@@ -16,5 +16,6 @@ for item in .gitignore README.md LICENSE auth.py dev.py evals ios_app security.p
 done
 
 cp "$ROOT/mac_app/MondayDesktop/Info.plist" "$CONTENTS/Info.plist"
+cp "$ROOT/assets/Monday.icns" "$CONTENTS/Resources/Monday.icns"
 swiftc "$ROOT/mac_app/MondayDesktop/main.swift" -o "$CONTENTS/MacOS/MondayDesktop"
 echo "已生成：$OUT"

@@ -80,6 +80,7 @@ Codex 模式说明：
 - 已提供 macOS 打包脚本：`bash scripts/build_macos_app.sh`，会生成 `dist/MondayAssistant.app` 和 DMG。
 - 已提供 macOS 菜单栏入口：`bash mac_app/build_menu_app.sh`，生成 `dist/MondayMenu.app`。
 - 已提供原生桌面 App：`bash mac_app/build_desktop_app.sh`，生成 `dist/MondayDesktop.app`，内置 WebView 窗口并自动连接/启动服务。
+- 已生成应用图标 `assets/Monday.icns`，并提供一键安装包脚本 `bash scripts/build_installer.sh`，输出 `dist/MondayInstaller.dmg`。
 - 新增多步 Agent 评测脚本 `evals/codex_task_smoke.py` 和统一评测入口 `evals/run_all.sh`。
 - 新增本地模型速度基准 `evals/model_benchmark.py`，可自动推荐响应最快的本地模型。
 - 新增签名/公证文档 `docs/notarization.md` 和脚本 `scripts/notarize_macos.sh`。

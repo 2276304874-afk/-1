@@ -10,6 +10,8 @@
   <string>星期一</string>
   <key>CFBundleDisplayName</key>
   <string>星期一</string>
+  <key>CFBundleIconFile</key>
+  <string>Monday</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>

@@ -29,6 +29,8 @@ cat > "$CONTENTS/Info.plist" <<PLIST
   <string>星期一</string>
   <key>CFBundleDisplayName</key>
   <string>星期一</string>
+  <key>CFBundleIconFile</key>
+  <string>Monday</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>
@@ -36,6 +38,7 @@ cat > "$CONTENTS/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+cp "$ROOT/assets/Monday.icns" "$CONTENTS/Resources/Monday.icns"
 
 cat > "$CONTENTS/MacOS/MondayAssistant" <<'LAUNCHER'
 #!/bin/bash

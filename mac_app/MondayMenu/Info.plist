@@ -8,6 +8,8 @@
   <string>com.monday.assistant.menu</string>
   <key>CFBundleName</key>
   <string>星期一菜单</string>
+  <key>CFBundleIconFile</key>
+  <string>Monday</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>
