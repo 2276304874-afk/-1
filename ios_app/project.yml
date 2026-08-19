@@ -1,0 +1,27 @@
+name: MondayApp
+options:
+  bundleIdPrefix: com.monday
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  MondayApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: MondayApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.monday.assistant
+        INFOPLIST_FILE: MondayApp/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+    scheme:
+      gatherCoverageData: false

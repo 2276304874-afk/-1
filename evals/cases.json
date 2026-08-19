@@ -1,0 +1,13 @@
+[
+  {"name": "time", "message": "现在几点", "expect_any": ["时间", "星期"]},
+  {"name": "battery", "message": "电池电量", "expect_any": ["电量", "%"]},
+  {"name": "system", "message": "电脑状态怎么样", "expect_any": ["Mac", "CPU", "内存"]},
+  {"name": "open_app", "message": "打开浏览器", "expect_tool": "open_app"},
+  {"name": "web_search", "message": "搜索人工智能最新进展", "expect_tool": "web_search"},
+  {"name": "remember", "message": "记住我最喜欢的颜色是蓝色", "expect_tool": "remember"},
+  {"name": "memory_recall", "message": "我最喜欢的颜色是什么", "expect_any": ["蓝色", "深蓝"]},
+  {"name": "reminder", "message": "5分钟后提醒我休息", "expect_tool": "set_reminder"},
+  {"name": "volume", "message": "把音量调到50", "expect_tool": "set_volume"},
+  {"name": "workspace", "message": "列出工作区文件", "expect_tool": "list_workspace"},
+  {"name": "briefing", "message": "贾维斯，汇报", "expect_any": ["简报", "系统"]}
+]

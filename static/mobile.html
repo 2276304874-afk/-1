@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0d10" />
+    <title>星期一 · 移动端</title>
+    <link rel="stylesheet" href="/static/mobile.css?v=8" />
+    <script defer src="/static/vendor/face-api.min.js?v=1"></script>
+    <script defer src="/static/mobile.js?v=8"></script>
+  </head>
+  <body>
+    <div id="authScreen" class="auth-screen">
+      <div class="mobile-brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <h1>星期一</h1>
+          <span>MONDAY MOBILE</span>
+        </div>
+      </div>
+
+      <div class="mobile-auth-card">
+        <h2 id="mobileAuthTitle">访问验证</h2>
+        <p id="mobileAuthHint">密码或人脸验证通过后使用。</p>
+
+        <div id="mobileAuthTabs" class="mobile-tabs">
+          <button type="button" data-mobile-tab="password">密码</button>
+          <button type="button" data-mobile-tab="face">人脸</button>
+        </div>
+
+        <section id="mobilePasswordPane" class="mobile-pane">
+          <input id="mobilePassword" type="password" placeholder="输入访问密码" autocomplete="current-password" />
+          <button id="mobilePasswordSubmit" type="button">进入</button>
+        </section>
+
+        <section id="mobileFacePane" class="mobile-pane" hidden>
+          <video id="mobileFaceVideo" muted playsinline></video>
+          <div id="mobileFaceStatus" class="mobile-status">正在加载人脸模型</div>
+          <button id="mobileFaceSubmit" type="button" disabled>人脸识别</button>
+        </section>
+
+        <section id="mobileSetupPane" class="mobile-pane" hidden>
+          <p>第一次使用，请设置访问密码。</p>
+          <input id="mobileSetupPassword" type="password" placeholder="设置访问密码" autocomplete="new-password" />
+          <button id="mobileSetupSave" type="button">保存并进入</button>
+        </section>
+      </div>
+    </div>
+
+    <div id="appScreen" class="app-screen" hidden>
+      <header class="mobile-header">
+        <div>
+          <h1>星期一</h1>
+          <span id="mobileStatus">本地 AI</span>
+        </div>
+        <div class="mobile-header-actions">
+          <button id="mobileVoiceToggle" type="button">朗读</button>
+          <button id="mobileLogout" type="button">退出</button>
+        </div>
+      </header>
+
+      <div class="mobile-mode">
+        <button id="mobileAiMode" class="active" type="button">智能</button>
+        <button id="mobileTransferMode" type="button">传输</button>
+      </div>
+
+      <section id="mobileTransferPanel" class="mobile-transfer" hidden>
+        <input id="mobileTransferFile" type="file" multiple />
+        <div class="mobile-transfer-hint">选择文件后上传，文件会在 PC 和手机间同步。</div>
+        <div id="mobileTransferList"></div>
+      </section>
+
+      <main id="mobileMessages" class="mobile-messages"></main>
+
+      <div class="mobile-quick">
+        <button data-mobile-prompt="现在几点">时间</button>
+        <button data-mobile-prompt="电脑状态怎么样">电脑状态</button>
+        <button data-mobile-prompt="电池状态怎么样">电池</button>
+        <button data-mobile-prompt="联网搜索人工智能最新进展">联网学习</button>
+        <button data-mobile-prompt="请分析当前屏幕">分析屏幕</button>
+      </div>
+
+      <footer class="mobile-composer">
+        <button id="mobileMicBtn" type="button">语音</button>
+        <textarea id="mobileInput" rows="1" placeholder="和星期一说点什么"></textarea>
+        <button id="mobileSend" type="button">发送</button>
+      </footer>
+    </div>
+
+    <div id="mobileToast" class="mobile-toast"></div>
+  </body>
+</html>
