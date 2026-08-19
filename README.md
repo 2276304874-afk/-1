@@ -77,10 +77,8 @@ Codex 模式说明：
 - 新增可选本地 ASR：安装 `faster-whisper` 后 `/api/transcribe` 可提供完全本地语音转写。
 - 准备 whisper 模型：`bash scripts/download_whisper_model.sh small`，也可用 `MONDAY_WHISPER_MODEL` 指定本地模型路径。
 - 界面支持直接录制麦克风音频并本地转写；默认使用已下载的 `tiny` 模型。
-- 已提供 macOS 打包脚本：`bash scripts/build_macos_app.sh`，会生成 `dist/MondayAssistant.app` 和 DMG。
-- 已提供 macOS 菜单栏入口：`bash mac_app/build_menu_app.sh`，生成 `dist/MondayMenu.app`。
-- 已提供原生桌面 App：`bash mac_app/build_desktop_app.sh`，生成 `dist/MondayDesktop.app`，内置 WebView 窗口并自动连接/启动服务。
-- 已生成应用图标 `assets/Monday.icns`，并提供一键安装包脚本 `bash scripts/build_installer.sh`，输出 `dist/MondayInstaller.dmg`。
+- 推荐使用一键安装包：`bash scripts/build_installer.sh`，输出 `dist/MondayAssistant.dmg`，内含桌面 App 和菜单栏 App。
+- 底层打包脚本：`scripts/build_macos_app.sh`、`mac_app/build_desktop_app.sh`、`mac_app/build_menu_app.sh`。
 - 新增多步 Agent 评测脚本 `evals/codex_task_smoke.py` 和统一评测入口 `evals/run_all.sh`。
 - 新增本地模型速度基准 `evals/model_benchmark.py`，可自动推荐响应最快的本地模型。
 - 新增签名/公证文档 `docs/notarization.md` 和脚本 `scripts/notarize_macos.sh`。
