@@ -75,7 +75,7 @@ SECRETS_PATH = DATA_DIR / "secrets.json"
 WORKSPACE_ROOT = Path(os.environ.get("MONDAY_WORKSPACE", str(BASE_DIR))).resolve()
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
-DEFAULT_MODEL = os.environ.get("MONDAY_MODEL", "gemma4:e4b")
+DEFAULT_MODEL = os.environ.get("MONDAY_MODEL", "llama3:latest")
 EMBED_MODEL = os.environ.get("MONDAY_EMBED_MODEL", "nomic-embed-text:latest")
 AUX_MODEL = os.environ.get("MONDAY_AUX_MODEL", "llama3:latest")
 SUMMARY_MODEL = os.environ.get("MONDAY_SUMMARY_MODEL", "minimax-m3:cloud")

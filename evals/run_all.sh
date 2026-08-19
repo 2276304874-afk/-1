@@ -12,6 +12,9 @@ python3 evals/security_smoke.py
 echo "==> 沙箱逃逸"
 python3 evals/sandbox_smoke.py
 
+echo "==> 模型基准"
+python3 evals/model_benchmark.py
+
 echo "==> 多步 Agent"
 python3 evals/codex_task_smoke.py
 

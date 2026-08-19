@@ -80,6 +80,8 @@ Codex 模式说明：
 - 已提供 macOS 打包脚本：`bash scripts/build_macos_app.sh`，会生成 `dist/MondayAssistant.app` 和 DMG。
 - 已提供 macOS 菜单栏入口：`bash mac_app/build_menu_app.sh`，生成 `dist/MondayMenu.app`。
 - 新增多步 Agent 评测脚本 `evals/codex_task_smoke.py` 和统一评测入口 `evals/run_all.sh`。
+- 新增本地模型速度基准 `evals/model_benchmark.py`，可自动推荐响应最快的本地模型。
+- 新增签名/公证文档 `docs/notarization.md` 和脚本 `scripts/notarize_macos.sh`。
 - 敏感路径读取和危险命令已加固，并提供 `evals/security_smoke.py` 安全冒烟测试。
 - 代码沙箱已禁止读取 `/etc/passwd`、`~/.ssh`、认证/密钥/记忆文件，禁止外网和写工作区外，提供 `evals/sandbox_smoke.py` 逃逸测试。
 - 支持手动添加外部 HTTP API 集成，并通过 `call_integration` 调用。
